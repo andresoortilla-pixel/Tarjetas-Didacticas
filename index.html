@@ -36,9 +36,13 @@
          <canvas> (render 3D). Por defecto pueden quedar dimensionados según
          la resolución nativa de la cámara en vez de ocupar el 100% de la
          pantalla, lo que genera las barras negras a los lados.
-         Forzamos a ambos a cubrir toda la pantalla. */
+
+         IMPORTANTE: el selector "video" NO debe incluir a los <video> que
+         están dentro de <a-assets>, porque esos son los que se usan como
+         TEXTURA sobre la tarjeta (a-video) y deben quedar anclados en el
+         espacio 3D, no en fullscreen. Por eso se excluyen con :not(). */
       a-scene canvas,
-      video {
+      video:not(a-assets video) {
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
@@ -46,6 +50,12 @@
         height: 100vh !important;
         object-fit: cover !important;
         object-position: center !important;
+      }
+
+      /* Aseguramos explícitamente que los videos-fuente (textura) nunca se
+         muestren como elementos HTML sueltos en la pantalla. */
+      a-assets video {
+        display: none !important;
       }
     </style>
   </head>

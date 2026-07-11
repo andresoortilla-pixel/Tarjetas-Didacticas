@@ -31,31 +31,30 @@
         font-family: sans-serif; text-align: center; pointer-events: none;
       }
 
-      /* === FIX FRANJAS NEGRAS ===
-         MindAR/A-Frame crean internamente un <video> (feed de cámara) y un
-         <canvas> (render 3D). Por defecto pueden quedar dimensionados según
-         la resolución nativa de la cámara en vez de ocupar el 100% de la
-         pantalla, lo que genera las barras negras a los lados.
-
-         IMPORTANTE: el selector "video" NO debe incluir a los <video> que
-         están dentro de <a-assets>, porque esos son los que se usan como
-         TEXTURA sobre la tarjeta (a-video) y deben quedar anclados en el
-         espacio 3D, no en fullscreen. Por eso se excluyen con :not(). */
-      a-scene canvas,
-      video:not(a-assets video) {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        object-fit: cover !important;
-        object-position: center !important;
+      /* Contenedor de videos a pantalla completa (fuera del espacio 3D AR).
+         object-fit: cover llena TODA la pantalla del celular sin franjas,
+         recortando lo que sobre a los lados o arriba/abajo si el aspecto
+         del video no calza exacto con el de la pantalla. */
+      #video-overlay {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        z-index: 9000;
+        pointer-events: none;
+        background: #000;
       }
 
-      /* Aseguramos explícitamente que los videos-fuente (textura) nunca se
-         muestren como elementos HTML sueltos en la pantalla. */
-      a-assets video {
-        display: none !important;
+      #video-overlay video {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: none;
+      }
+
+      #video-overlay video.activo {
+        display: block;
       }
     </style>
   </head>
@@ -68,6 +67,18 @@
 
     <div id="status">⏳ Cargando cámara...</div>
 
+    <!-- Videos a pantalla completa: se muestran encima de todo al detectar la tarjeta -->
+    <div id="video-overlay">
+      <video id="video-a" src="./assets/Letra_A.mp4" preload="auto" loop playsinline webkit-playsinline></video>
+      <video id="video-b" src="./assets/Letra_B.mp4" preload="auto" loop playsinline webkit-playsinline></video>
+      <video id="video-c" src="./assets/Letra_C.mp4" preload="auto" loop playsinline webkit-playsinline></video>
+      <video id="video-d" src="./assets/Letra_D.mp4" preload="auto" loop playsinline webkit-playsinline></video>
+      <video id="video-e" src="./assets/Letra_E.mp4" preload="auto" loop playsinline webkit-playsinline></video>
+      <video id="video-i" src="./assets/Letra_I.mp4" preload="auto" loop playsinline webkit-playsinline></video>
+      <video id="video-o" src="./assets/Letra_O.mp4" preload="auto" loop playsinline webkit-playsinline></video>
+      <video id="video-u" src="./assets/Letra_U.mp4" preload="auto" loop playsinline webkit-playsinline></video>
+    </div>
+
     <!-- Se actualizó el nombre a targets.mind -->
     <a-scene
       mindar-image="imageTargetSrc: ./assets/targets.mind; autoStart: true; filterMinCF:0.0001; filterBeta: 0.001;"
@@ -76,61 +87,35 @@
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false">
 
-      <!-- Videos precargados como assets (se usan como textura sobre cada tarjeta) -->
-      <a-assets>
-        <video id="video-a" src="./assets/Letra_A.mp4" preload="auto" loop playsinline webkit-playsinline></video>
-        <video id="video-b" src="./assets/Letra_B.mp4" preload="auto" loop playsinline webkit-playsinline></video>
-        <video id="video-c" src="./assets/Letra_C.mp4" preload="auto" loop playsinline webkit-playsinline></video>
-        <video id="video-d" src="./assets/Letra_D.mp4" preload="auto" loop playsinline webkit-playsinline></video>
-        <video id="video-e" src="./assets/Letra_E.mp4" preload="auto" loop playsinline webkit-playsinline></video>
-        <video id="video-i" src="./assets/Letra_I.mp4" preload="auto" loop playsinline webkit-playsinline></video>
-        <video id="video-o" src="./assets/Letra_O.mp4" preload="auto" loop playsinline webkit-playsinline></video>
-        <video id="video-u" src="./assets/Letra_U.mp4" preload="auto" loop playsinline webkit-playsinline></video>
-      </a-assets>
-
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- 2. Cada entidad detecta su tarjeta y muestra el video justo encima de ella -->
+      <!-- Estas entidades SOLO sirven para detectar (targetFound/targetLost).
+           No llevan a-video ni a-plane: no se renderiza nada en 3D, el video
+           se muestra aparte, como capa HTML fullscreen. -->
 
       <!-- Índice 0: Letra A -->
-      <a-entity mindar-image-target="targetIndex: 0" id="target-a">
-        <a-video src="#video-a" width="1" height="1.78" position="0 0 0"></a-video>
-      </a-entity>
+      <a-entity mindar-image-target="targetIndex: 0" id="target-a"></a-entity>
 
       <!-- Índice 1: Letra B -->
-      <a-entity mindar-image-target="targetIndex: 1" id="target-b">
-        <a-video src="#video-b" width="1" height="1.78" position="0 0 0"></a-video>
-      </a-entity>
+      <a-entity mindar-image-target="targetIndex: 1" id="target-b"></a-entity>
 
       <!-- Índice 2: Letra C -->
-      <a-entity mindar-image-target="targetIndex: 2" id="target-c">
-        <a-video src="#video-c" width="1" height="1.78" position="0 0 0"></a-video>
-      </a-entity>
+      <a-entity mindar-image-target="targetIndex: 2" id="target-c"></a-entity>
 
       <!-- Índice 3: Letra D -->
-      <a-entity mindar-image-target="targetIndex: 3" id="target-d">
-        <a-video src="#video-d" width="1" height="1.78" position="0 0 0"></a-video>
-      </a-entity>
+      <a-entity mindar-image-target="targetIndex: 3" id="target-d"></a-entity>
 
       <!-- Índice 4: Letra E -->
-      <a-entity mindar-image-target="targetIndex: 4" id="target-e">
-        <a-video src="#video-e" width="1" height="1.78" position="0 0 0"></a-video>
-      </a-entity>
+      <a-entity mindar-image-target="targetIndex: 4" id="target-e"></a-entity>
 
       <!-- Índice 5: Letra I -->
-      <a-entity mindar-image-target="targetIndex: 5" id="target-i">
-        <a-video src="#video-i" width="1" height="1.78" position="0 0 0"></a-video>
-      </a-entity>
+      <a-entity mindar-image-target="targetIndex: 5" id="target-i"></a-entity>
 
       <!-- Índice 6: Letra O -->
-      <a-entity mindar-image-target="targetIndex: 6" id="target-o">
-        <a-video src="#video-o" width="1" height="1.78" position="0 0 0"></a-video>
-      </a-entity>
+      <a-entity mindar-image-target="targetIndex: 6" id="target-o"></a-entity>
 
       <!-- Índice 7: Letra U -->
-      <a-entity mindar-image-target="targetIndex: 7" id="target-u">
-        <a-video src="#video-u" width="1" height="1.78" position="0 0 0"></a-video>
-      </a-entity>
+      <a-entity mindar-image-target="targetIndex: 7" id="target-u"></a-entity>
 
     </a-scene>
 
@@ -138,49 +123,6 @@
       const overlayEl = document.getElementById("overlay");
       const startBtn  = document.getElementById("start-btn");
       const statusEl  = document.getElementById("status");
-
-      // ==========================================================
-      // AJUSTE DE RECORTE (elimina franjas negras horneadas en el video)
-      // ==========================================================
-      // CROP_X = fracción del ANCHO del video que es contenido real (sin negro).
-      // Ej: si las franjas negras ocupan ~27.5% a cada lado, el contenido real
-      // es ~45% del ancho => CROP_X = 0.45
-      //
-      // Sube este valor (hacia 1.0) si TODAVÍA ves franjas negras.
-      // Bájalo (hacia 0.0) si ahora se ve "muy acercado" y corta contenido.
-      const CROP_X = 0.45;
-
-      // Si alguna letra necesita un recorte distinto, agrégala aquí
-      // (si no aparece, usa el CROP_X general de arriba).
-      const CROP_OVERRIDES = {
-        // "target-i": 0.42,
-        // "target-o": 0.48,
-      };
-
-      function aplicarRecorteDeVideo(targetId, cropX) {
-        const entity = document.querySelector(`#${targetId} a-video`);
-        if (!entity) return;
-
-        function intentarAplicar() {
-          const mesh = entity.getObject3D("mesh");
-          const map = mesh && mesh.material && mesh.material.map;
-
-          if (!map) {
-            // La textura aún no existe, reintenta en el próximo frame
-            requestAnimationFrame(intentarAplicar);
-            return;
-          }
-
-          map.wrapS = THREE.ClampToEdgeWrapping;
-          map.wrapT = THREE.ClampToEdgeWrapping;
-          map.repeat.set(cropX, 1);
-          map.offset.set((1 - cropX) / 2, 0);
-          map.needsUpdate = true;
-        }
-
-        intentarAplicar();
-      }
-      // ==========================================================
 
       const tarjetas = [
         { id: "target-a", videoId: "video-a", nombre: "Abeja (A)" },
@@ -195,6 +137,14 @@
 
       let elementosInteractivos = [];
 
+      function ocultarTodosLosVideos() {
+        elementosInteractivos.forEach(item => {
+          item.videoEl.classList.remove("activo");
+          item.videoEl.pause();
+          item.videoEl.currentTime = 0;
+        });
+      }
+
       startBtn.addEventListener("click", function () {
         overlayEl.style.display = "none";
         statusEl.innerText = "📷 Apunta la cámara a cualquier tarjeta...";
@@ -206,10 +156,6 @@
           // Precarga silenciosa
           videoEl.play().then(() => videoEl.pause()).catch(e => console.log("Error preload:", e));
 
-          // Recorta la textura para quitar las franjas negras horneadas en el mp4
-          const cropX = CROP_OVERRIDES[t.id] ?? CROP_X;
-          aplicarRecorteDeVideo(t.id, cropX);
-
           return { targetEl, videoEl, nombre: t.nombre };
         });
 
@@ -217,12 +163,19 @@
           item.targetEl.addEventListener("targetFound", function () {
             statusEl.style.background = "rgba(0,140,0,0.88)";
             statusEl.innerText = `🟢 ¡Detectado: ${item.nombre}! Reproduciendo...`;
+
+            // Oculta cualquier otro video que pudiera haber quedado activo
+            ocultarTodosLosVideos();
+
+            item.videoEl.classList.add("activo");
+            item.videoEl.currentTime = 0;
             item.videoEl.play();
           });
 
           item.targetEl.addEventListener("targetLost", function () {
             statusEl.style.background = "rgba(0,0,0,0.7)";
             statusEl.innerText = "📷 Apunta la cámara a cualquier tarjeta...";
+            item.videoEl.classList.remove("activo");
             item.videoEl.pause();
             item.videoEl.currentTime = 0;
           });

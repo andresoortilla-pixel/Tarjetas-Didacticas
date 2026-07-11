@@ -139,6 +139,49 @@
       const startBtn  = document.getElementById("start-btn");
       const statusEl  = document.getElementById("status");
 
+      // ==========================================================
+      // AJUSTE DE RECORTE (elimina franjas negras horneadas en el video)
+      // ==========================================================
+      // CROP_X = fracción del ANCHO del video que es contenido real (sin negro).
+      // Ej: si las franjas negras ocupan ~27.5% a cada lado, el contenido real
+      // es ~45% del ancho => CROP_X = 0.45
+      //
+      // Sube este valor (hacia 1.0) si TODAVÍA ves franjas negras.
+      // Bájalo (hacia 0.0) si ahora se ve "muy acercado" y corta contenido.
+      const CROP_X = 0.45;
+
+      // Si alguna letra necesita un recorte distinto, agrégala aquí
+      // (si no aparece, usa el CROP_X general de arriba).
+      const CROP_OVERRIDES = {
+        // "target-i": 0.42,
+        // "target-o": 0.48,
+      };
+
+      function aplicarRecorteDeVideo(targetId, cropX) {
+        const entity = document.querySelector(`#${targetId} a-video`);
+        if (!entity) return;
+
+        function intentarAplicar() {
+          const mesh = entity.getObject3D("mesh");
+          const map = mesh && mesh.material && mesh.material.map;
+
+          if (!map) {
+            // La textura aún no existe, reintenta en el próximo frame
+            requestAnimationFrame(intentarAplicar);
+            return;
+          }
+
+          map.wrapS = THREE.ClampToEdgeWrapping;
+          map.wrapT = THREE.ClampToEdgeWrapping;
+          map.repeat.set(cropX, 1);
+          map.offset.set((1 - cropX) / 2, 0);
+          map.needsUpdate = true;
+        }
+
+        intentarAplicar();
+      }
+      // ==========================================================
+
       const tarjetas = [
         { id: "target-a", videoId: "video-a", nombre: "Abeja (A)" },
         { id: "target-b", videoId: "video-b", nombre: "Ballena (B)" },
@@ -162,6 +205,10 @@
 
           // Precarga silenciosa
           videoEl.play().then(() => videoEl.pause()).catch(e => console.log("Error preload:", e));
+
+          // Recorta la textura para quitar las franjas negras horneadas en el mp4
+          const cropX = CROP_OVERRIDES[t.id] ?? CROP_X;
+          aplicarRecorteDeVideo(t.id, cropX);
 
           return { targetEl, videoEl, nombre: t.nombre };
         });
